@@ -19,16 +19,47 @@ MainWindow::MainWindow(QWidget *parent) :
     displayBoard(3);
 }
 
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
 void MainWindow::createMenuAction()
 {
     operationMenu = new QMenu(tr("Operation"), this);
     ui->menuBar->addMenu(operationMenu);
 
-    changeBoardAction = new QAction(tr("Change Board Size"), this);
+    settingMenu = new QMenu(tr("Change Settings"), this);
+    operationMenu->addMenu(settingMenu);
+
+    changeBoardAction = new QAction(tr("Board Size"), this);
     changeBoardAction->setShortcut(tr("Ctrl+b"));
     changeBoardAction->setStatusTip("Change the Board Size");
     connect(changeBoardAction, SIGNAL(triggered()), this, SLOT(changeBoardSize()));
-    operationMenu->addAction(changeBoardAction);
+    settingMenu->addAction(changeBoardAction);
+
+    changeAlgMenu = new QMenu(tr("Algorithm"), this);
+    settingMenu->addMenu(changeAlgMenu);
+
+    algDFS = new QAction(tr("DFS"), this);
+    algDFS->setCheckable(true);
+    algDFS->setChecked(true);
+    algDFS->setStatusTip("DFS Algorithm");
+    connect(algDFS, SIGNAL(triggered()), this, SLOT(changeAlgtoDFS()));
+    changeAlgMenu->addAction(algDFS);
+
+    algLocalSearch = new QAction(tr("Local Search"), this);
+    algLocalSearch->setCheckable(true);
+    algLocalSearch->setChecked(false);
+    algLocalSearch->setStatusTip("Local Search Algorithm");
+    connect(algLocalSearch, SIGNAL(triggered()), this, SLOT(changeAlgtoLocalSearch()));
+    changeAlgMenu->addAction(algLocalSearch);
+
+    changeIntervalAction = new QAction(tr("Display Interval"), this);
+    changeIntervalAction->setShortcut(tr("Ctrl+t"));
+    changeIntervalAction->setStatusTip("Change the Display Interval");
+    connect(changeIntervalAction, SIGNAL(triggered()), this, SLOT(changeDisplayInterval()));
+    settingMenu->addAction(changeIntervalAction);
 
     initAction = new QAction(tr("Initialize"), this);
     initAction->setShortcut(tr("Ctrl+d"));
@@ -612,7 +643,29 @@ void MainWindow::changeBoardSize()
     }
 }
 
-MainWindow::~MainWindow()
+void MainWindow::changeAlgtoDFS()
 {
-    delete ui;
+    algDFS->setChecked(true);
+    algLocalSearch->setChecked(false);
+    algType = DFS;
+    cout << "DFS" << endl;
 }
+
+void MainWindow::changeAlgtoLocalSearch()
+{
+    algDFS->setChecked(false);
+    algLocalSearch->setChecked(true);
+    algType = LOCALSEARCH;
+    cout << "Local Search" << endl;
+}
+
+void MainWindow::changeDisplayInterval()
+{
+    bool isOK;
+    int newDisplayInterval = 1000 * QInputDialog::getInt(NULL, "Change Display Interval", "Change the display interval (measured by the millisecond).\nPlease enter an integer between 0 and 3000.",
+                                 0, 0, 3000, 100, &isOK);
+    if(isOK) {
+        DisplayInterval = newDisplayInterval;
+    }
+}
+

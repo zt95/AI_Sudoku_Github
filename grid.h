@@ -7,6 +7,8 @@ extern int boardSize;
 extern int gridSize;
 void changeSize(int newBoardSize);
 int getGridSize(int bdSize);
+enum Alg {DFS, LOCALSEARCH};
+extern Alg algType;
 
 class Grid : public QWidget
 {

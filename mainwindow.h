@@ -28,6 +28,9 @@ public:
 
 private slots:
     void changeBoardSize();
+    void changeAlgtoDFS();
+    void changeAlgtoLocalSearch();
+    void changeDisplayInterval();
     void autoInit();
     void clear();
     void run();
@@ -49,7 +52,12 @@ private:
     QFrame *frame;
 
     QMenu *operationMenu;
+    QMenu *settingMenu;
     QAction *changeBoardAction;
+    QAction* changeIntervalAction;
+    QMenu* changeAlgMenu;
+    QAction *algDFS;
+    QAction *algLocalSearch;
     QAction *initAction;
     QAction *clearAction;
     QAction *runAction;
