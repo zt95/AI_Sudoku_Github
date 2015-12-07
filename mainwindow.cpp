@@ -592,8 +592,12 @@ void MainWindow::run()
         }
     }
     else {
-        this->backtrack();
-        //this->localSearch();
+        if (algType == DFS) {
+            this->backtrack();
+        }
+        else if (algType == LOCALSEARCH) {
+            this->localSearch();
+        }
         QMessageBox::about(this, "Result", tr("Calculation complete!"));
         if(judgeInput())cout<<"Correct!!!"<<endl;
     }
