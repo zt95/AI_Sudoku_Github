@@ -165,6 +165,236 @@ bool checkBound(int i,int j,int n)
     return true;
 }
 
+int blockX(int x, int y, int m)
+{
+    return (x/m)*m+y/m;
+}
+
+int blockY(int x,int y, int m)
+{
+    return (x%m)*m+y%m;
+}
+void MainWindow::randomSolution()
+{
+    int m = boardSize;
+    int x=0;
+    vector<int> perm;
+    for(int i=0;i<m*m;i++)
+    {
+        int j = rand()%(i+1);
+        perm.push_back(i);
+        int tmp = perm[j];
+        perm[j] = perm[i];
+        perm[i] = tmp;
+    }
+    for(int i=0;i<m;i++)
+    {
+        for(int j=0;j<m;j++)
+        {
+            for(int k=0;k<m*m;k++)
+            {
+                //cout<<"hi"<<endl;
+                board[m*i+j][k]->setter(perm[(x%(m*m))]+1);
+                x++;
+            }
+            x += m;
+        }
+        x++;
+    }
+}
+
+void MainWindow::prune()
+{
+    int n = boardSize*boardSize;
+    int m = boardSize;
+    possibleNum.clear();
+    for(int i=0;i<n;i++)
+    {
+        vector<unordered_set<int> > posI;
+        for(int j=0;j<n;j++)
+        {
+            unordered_set<int> posIJ;
+            if(board[i][j]->getter() == 0)
+            {
+                for(int k=0;k<n;k++)
+                {
+                    posIJ.insert(k);
+                }
+            }
+            else posIJ.insert(board[i][j]->getter()-1);
+            posI.push_back(posIJ);
+        }
+        possibleNum.push_back(posI);
+    }
+    int iter = 0;
+    bool update = true;
+    while(iter<80 && update)
+    {
+        iter++;
+        update = false;
+        for(int i=0;i<n;i++)
+        {
+            for(int j=0;j<n;j++)
+            {
+                if(board[i][j]->getter()>0)
+                {
+                    for(int k = 0; k < n; k++)
+                    {
+                        //Erase row, column
+                        if(j != k)
+                            possibleNum[i][k].erase(board[i][j]->getter()-1);
+                        if(i != k)
+                            possibleNum[k][j].erase(board[i][j]->getter()-1);
+
+                        //Erase block
+                        int bx = blockX(i,j,m);
+                        int by = blockY(i,j,m);
+                        if(by != k)
+                        {
+                            int i2 = blockX(bx,k,m);
+                            int j2 = blockY(bx,k,m);
+                            possibleNum[i2][j2].erase(board[i][j]->getter()-1);
+                        }
+                    }
+                }
+            }
+        }
+        for(int i=0;i<n;i++)
+        {
+            for(int j=0;j<n;j++)
+            {
+                if(board[i][j]->getter()==0 && possibleNum[i][j].size()==1)
+                {
+                    update = true;
+                    auto it = possibleNum[i][j].begin();
+                    board[i][j]->setter(*it + 1);
+                }
+            }
+        }
+        for(int i=0;i<n;i++)
+        {
+            for(int num=0;num<n;num++)
+            {
+                int rowCnt = 0;
+                int rowOnly = -1;
+                int colCnt = 0;
+                int colOnly = -1;
+                int blockCnt = 0;
+                int blockOnly = -1;
+                for(int j = 0;j<n;j++)
+                {
+                    if(possibleNum[i][j].find(num) != possibleNum[i][j].end())
+                    {
+                        rowOnly = j;
+                        rowCnt++;
+                    }
+                    if(possibleNum[j][i].find(num) != possibleNum[j][i].end())
+                    {
+                        colOnly = j;
+                        colCnt++;
+                    }
+                    int bx = blockX(i,j,m);
+                    int by = blockY(i,j,m);
+                    if(possibleNum[bx][by].find(num) != possibleNum[bx][by].end())
+                    {
+                        blockOnly = j;
+                        blockCnt++;
+                    }
+                }
+                if(rowCnt == 1)
+                {
+                    if(board[i][rowOnly]->getter() == 0)
+                    {
+                        update = true;
+                        board[i][rowOnly]->setter(num+1);
+                        possibleNum[i][rowOnly].clear();
+                        possibleNum[i][rowOnly].insert(num);
+                    }
+                }
+                if(colCnt == 1)
+                {
+                    if(board[colOnly][i]->getter() == 0)
+                    {
+                        update = true;
+                        board[colOnly][i]->setter(num+1);
+                        possibleNum[colOnly][i].clear();
+                        possibleNum[colOnly][i].insert(num);
+                    }
+                }
+                if(blockCnt == 1)
+                {
+                    int bx = blockX(i,blockOnly,m);
+                    int by = blockY(i,blockOnly,m);
+                    if(board[bx][by]->getter() == 0)
+                    {
+                        update = true;
+                        board[bx][by]->setter(num+1);
+                        possibleNum[bx][by].clear();
+                        possibleNum[bx][by].insert(num);
+                    }
+                }
+            }
+        }
+    }
+}
+
+bool MainWindow::backtrack2()
+{
+    int bestExpandX=-1;
+    int bestExpandY=-1;
+    int n = boardSize*boardSize;
+    int m = boardSize;
+    int bestBranch = n+1;
+    bool done = true;
+    for(int i=0;i<n;i++)
+    {
+        //if(!done)break;
+        for(int j=0;j<n;j++)
+        {
+            if(board[i][j]->getter() == 0)
+            {
+                done = false;
+                if(possibleNum[i][j].size()<bestBranch)
+                {
+                    bestBranch = possibleNum[i][j].size();
+                    bestExpandX = i;
+                    bestExpandY = j;
+                }
+            }
+        }
+    }
+    if(done)return true;
+    int x=bestExpandX;
+    int y=bestExpandY;
+    std::vector<std::vector<std::unordered_set<int> > > history = possibleNum;
+    unordered_set<int> posXY = possibleNum[x][y];
+    for(auto it = posXY.begin(); it != posXY.end(); ++it)
+    {
+        int num = *it;
+        for(int i=0;i<n;i++)
+        {
+            //Erase row,col
+            if(i != x)possibleNum[i][y].erase(num);
+            if(i != y)possibleNum[x][i].erase(num);
+
+            //Erase block
+            int bx = blockX(x,y,m);
+            int by = blockY(x,y,m);
+            if(i != by)
+            {
+                int i2 = blockX(bx,i,m);
+                int j2 = blockY(bx,i,m);
+                possibleNum[i2][j2].erase(num);
+            }
+        }
+        board[x][y]->setter(num+1);
+        if(this->backtrack2())return true;
+        possibleNum = history;
+        board[x][y]->setter(0);
+    }
+    return false;
+}
+
 bool MainWindow::backtrack()
 {
     int x=0;
@@ -234,15 +464,6 @@ std::vector<int> randomPerm(int n)
     }
     return perm;
 }*/
-int blockX(int x, int y, int m)
-{
-    return (x/m)*m+y/m;
-}
-
-int blockY(int x,int y, int m)
-{
-    return (x%m)*m+y%m;
-}
 
 bool MainWindow::localSearch()
 {
@@ -328,33 +549,39 @@ bool MainWindow::localSearch()
     {
         for(int j=0;j<n;j++)
         {
-            if(col[i][j].size()>1)
+            TotalErr += col[i][j].size()*(col[i][j].size()-1);
+            TotalErr += block[i][j].size()*(block[i][j].size()-1);
+            /*if(col[i][j].size()>1)
             {
-                /*for(auto it = col[i][j].begin();it!=col[i][j].end();++it)
+                for(auto it = col[i][j].begin();it!=col[i][j].end();++it)
                 {
                     ErrPoint[*it][i]++;
                     if(!locked[*it][i])board[*it][i]->changeTextColor(Qt::blue);
-                }*/
+                }
                 TotalErr += col[i][j].size()-1;
-            }
-            if(block[i][j].size()>1)
+            }*/
+            /*if(block[i][j].size()>1)
             {
-                /*for(auto it = block[i][j].begin();it!=block[i][j].end();++it)
+                for(auto it = block[i][j].begin();it!=block[i][j].end();++it)
                 {
                     int bx = blockX(i,*it,m);
                     int by = blockY(i,*it,m);
                     ErrPoint[bx][by] ++;
                     if(!locked[bx][by])board[bx][by]->changeTextColor(Qt::blue);
-                }*/
+                }
                 TotalErr += block[i][j].size()-1;
-            }
+            }*/
         }
     }
     int iter = 0;
     vector<double> tValue = {100.0,100.0,100.0,200.0,400.0,800.0,1600.0,3200.0,8000.0};
-    vector<double> aValue = {0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9};
+    vector<double> aValue = {0.85,0.85,0.85,0.85,0.85,0.85,0.85,0.85,0.85};
+    vector<double> bValue = {1.1,1.1,1.1,1.1,1.1,1.1,1.1,1.1,1.1};
     double T = tValue[m];
     double alpha = aValue[m];
+    int M = 20;
+    double beta = bValue[m];
+    int mIter = 0;
     while(TotalErr>0 && iter<10000*m)
     {
         int i = rand()%board.size();
@@ -370,19 +597,28 @@ bool MainWindow::localSearch()
         int bx2 = blockX(i,j2,m);
         int by2 = blockY(i,j2,m);
         if(col[j1][val1].size()==1 && col[j2][val2].size()==1 && block[bx1][val1].size()==1 && block[bx2][val2].size()==1)continue;
+
         iter++;
+        mIter++;
         int tmpErr = 0;
-        if(col[j1][val1].size()>1)tmpErr--;
+        /*if(col[j1][val1].size()>1)tmpErr--;
         if(col[j1][val2].size()>0)tmpErr++;
         if(col[j2][val2].size()>1)tmpErr--;
-        if(col[j2][val1].size()>0)tmpErr++;
-
+        if(col[j2][val1].size()>0)tmpErr++;*/
+        tmpErr-=2*(col[j1][val1].size()-1);
+        tmpErr+=2*(col[j1][val2].size());
+        tmpErr-=2*(col[j2][val2].size()-1);
+        tmpErr+=2*(col[j2][val1].size());
         if(bx1!=bx2)
         {
-            if(block[bx1][val1].size()>1)tmpErr--;
+            /*if(block[bx1][val1].size()>1)tmpErr--;
             if(block[bx1][val2].size()>0)tmpErr++;
             if(block[bx2][val2].size()>1)tmpErr--;
-            if(block[bx2][val1].size()>0)tmpErr++;
+            if(block[bx2][val1].size()>0)tmpErr++;*/
+            tmpErr-=2*(block[bx1][val1].size()-1);
+            tmpErr+=2*(block[bx1][val2].size());
+            tmpErr-=2*(block[bx2][val2].size()-1);
+            tmpErr+=2*(block[bx2][val1].size());
         }
 
         if(exp((-tmpErr)/T)*999>rand()%1000)
@@ -421,8 +657,13 @@ bool MainWindow::localSearch()
             board[i][j1]->setter(boardVal[i][j1]+1);
             board[i][j2]->setter(boardVal[i][j2]+1);
         }
-        T *= alpha;
-        //cout<<TotalErr<<" "<<iter<<endl;
+        if(mIter == M)
+        {
+            mIter = 0;
+            M = M*beta;
+            T *= alpha;
+        }
+        cout<<TotalErr<<" "<<iter<<" "<<T<<endl;
     }
     cout<<"Total iteration:"<<iter<<endl;
     return true;
@@ -593,7 +834,8 @@ void MainWindow::run()
     }
     else {
         if (algType == DFS) {
-            this->backtrack();
+            this->prune();
+            this->backtrack2();
         }
         else if (algType == LOCALSEARCH) {
             this->localSearch();
@@ -609,7 +851,16 @@ void MainWindow::run()
 void MainWindow::autoInit()
 {
     clear();
-
+    randomSolution();
+    int n = boardSize*boardSize;
+    int crossNum = n*n + rand()%(n*n);
+    cout << crossNum<<endl;
+    for(int i=0;i<crossNum;i++)
+    {
+        int x = rand()%n;
+        int y = rand()%n;
+        board[x][y]->setter(0);
+    }
 }
 
 // clear the board

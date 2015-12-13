@@ -13,6 +13,7 @@
 #include "grid.h"
 #include "paintline.h"
 #include <vector>
+#include <unordered_set>
 
 namespace Ui {
 class MainWindow;
@@ -43,8 +44,11 @@ private:
     void displayLines();
     void init();
     bool backtrack();
+    bool backtrack2();
+    void prune();
     bool localSearch();
     bool judgeInput();
+    void randomSolution();
 
 private:
     Ui::MainWindow *ui;
@@ -64,6 +68,8 @@ private:
     QAction *quitAction;
     QMenu *helperMenu;
     QAction *aboutAction;
+
+    std::vector<std::vector<std::unordered_set<int> > > possibleNum;
 
     std::vector<std::vector<Grid*> > board;
 };
