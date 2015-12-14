@@ -7,6 +7,7 @@ int boardSize;
 int gridSize;
 int DisplayInterval = 0;
 Alg algType = DFS;
+bool doInteraction = false;
 
 int getGridSize(int bdSize)
 {
@@ -44,23 +45,27 @@ void Grid::setter(int val)
     if (val > 0) {
         this->value = val;
         line_edit->setText(QString::number(this->value));
-        QApplication::processEvents();
-        time_t dbegin,dstop;
-        dbegin = clock();
-        while(true)
-        {
-            if(clock()-dbegin > DisplayInterval)break;
+        if (doInteraction) {
+            QApplication::processEvents();
+            time_t dbegin;
+            dbegin = clock();
+            while(true)
+            {
+                if(clock()-dbegin > DisplayInterval)break;
+            }
         }
     }
     else {
         this->value = 0;
         line_edit->setText("");
-        QApplication::processEvents();
-        time_t dbegin,dstop;
-        dbegin = clock();
-        while(true)
-        {
-            if(clock()-dbegin > DisplayInterval)break;
+        if (doInteraction) {
+            QApplication::processEvents();
+            time_t dbegin;
+            dbegin = clock();
+            while(true)
+            {
+                if(clock()-dbegin > DisplayInterval)break;
+            }
         }
     }
 }
