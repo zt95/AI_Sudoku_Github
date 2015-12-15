@@ -14,6 +14,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     version = "1.0.0 Beta";
+    isRunning = false;
     this->setWindowTitle("Sudoku Solver");
     createMenuAction();
     displayBoard(3);
@@ -813,6 +814,10 @@ bool MainWindow::judgeInput()
 // entrance to run different methods
 void MainWindow::run()
 {
+    if (isRunning) {
+        return;
+    }
+    isRunning = true;
     time_t dbegin,dstop;
     dbegin = clock();
     for (int i = 0; i < board.size(); ++i) {
@@ -845,12 +850,18 @@ void MainWindow::run()
     }
     dstop = clock();
     cout<<dstop-dbegin<<endl;
+    isRunning = false;
 }
 
 // initialized by computer algorithm
 void MainWindow::autoInit()
 {
+    if (isRunning) {
+        return;
+    }
     clear();
+    bool savDoInteraction = doInteraction;
+    doInteraction = false;
     randomSolution();
     int n = boardSize*boardSize;
     int crossNum = n*n + rand()%(n*n);
@@ -861,11 +872,17 @@ void MainWindow::autoInit()
         int y = rand()%n;
         board[x][y]->setter(0);
     }
+    doInteraction = savDoInteraction;
 }
 
 // clear the board
 void MainWindow::clear()
 {
+    if (isRunning) {
+        return;
+    }
+    bool savDoInteraction = doInteraction;
+    doInteraction = false;
     for (int i = 0; i < board.size(); ++i) {
         for (int j = 0; j < board[i].size(); ++j) {
             board[i][j]->setter(0);
@@ -873,6 +890,7 @@ void MainWindow::clear()
             board[i][j]->setGridEnable(true);
         }
     }
+    doInteraction = savDoInteraction;
 }
 
 //show the information, e.g. version, developers
@@ -889,6 +907,9 @@ void MainWindow::about()
 // change the size of board
 void MainWindow::changeBoardSize()
 {
+    if (isRunning) {
+        return;
+    }
     bool isOK;
     int newBoardSize = QInputDialog::getInt(NULL, "Change Board Size", "The board size is represented as n^2*n^2.\nPlease enter n between 2 and 9.",
                                  3, 2, 9, 1, &isOK);
@@ -916,6 +937,9 @@ void MainWindow::changeAlgtoLocalSearch()
 
 void MainWindow::changeDisplayInterval()
 {
+    if (isRunning) {
+        return;
+    }
     bool isOK;
     int newDisplayInterval = 1000 * QInputDialog::getInt(NULL, "Change Display Interval", "Change the display interval (measured by the millisecond).\nPlease enter an integer between 0 and 3000.",
                                  0, 0, 3000, 100, &isOK);
@@ -923,4 +947,3 @@ void MainWindow::changeDisplayInterval()
         DisplayInterval = newDisplayInterval;
     }
 }
-

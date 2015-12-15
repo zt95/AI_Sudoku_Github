@@ -70,8 +70,9 @@ private:
     QAction *aboutAction;
 
     std::vector<std::vector<std::unordered_set<int> > > possibleNum;
-
     std::vector<std::vector<Grid*> > board;
+
+    bool isRunning;
 };
 
 #endif // MAINWINDOW_H
