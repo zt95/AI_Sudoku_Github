@@ -15,6 +15,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     version = "1.0.0 Beta";
     isRunning = false;
+    DisplayInterval = 0;
+    algType = DFS;
+    doInteraction = false;
     this->setWindowTitle("Sudoku Solver");
     createMenuAction();
     displayBoard(3);
@@ -42,14 +45,21 @@ void MainWindow::createMenuAction()
     changeAlgMenu = new QMenu(tr("Algorithm"), this);
     settingMenu->addMenu(changeAlgMenu);
 
-    algDFS = new QAction(tr("DFS"), this);
+    algDFS = new QAction(tr("Depth first search"), this);
     algDFS->setCheckable(true);
     algDFS->setChecked(true);
     algDFS->setStatusTip("DFS Algorithm");
     connect(algDFS, SIGNAL(triggered()), this, SLOT(changeAlgtoDFS()));
     changeAlgMenu->addAction(algDFS);
 
-    algLocalSearch = new QAction(tr("Local Search"), this);
+    algOptimizedDFS = new QAction(tr("Optimized DFS"), this);
+    algOptimizedDFS->setCheckable(true);
+    algOptimizedDFS->setChecked(false);
+    algOptimizedDFS->setStatusTip("DFS with some optimizations");
+    connect(algOptimizedDFS, SIGNAL(triggered()), this, SLOT(changeAlgtoOptimizedDFS()));
+    changeAlgMenu->addAction(algOptimizedDFS);
+
+    algLocalSearch = new QAction(tr("Simulated annealing"), this);
     algLocalSearch->setCheckable(true);
     algLocalSearch->setChecked(false);
     algLocalSearch->setStatusTip("Local Search Algorithm");
@@ -61,6 +71,23 @@ void MainWindow::createMenuAction()
     changeIntervalAction->setStatusTip("Change the Display Interval");
     connect(changeIntervalAction, SIGNAL(triggered()), this, SLOT(changeDisplayInterval()));
     settingMenu->addAction(changeIntervalAction);
+
+    changeInteractionMenu = new QMenu(tr("Show Interaction"), this);
+    settingMenu->addMenu(changeInteractionMenu);
+
+    interactionYes = new QAction(tr("Yes"), this);
+    interactionYes->setCheckable(true);
+    interactionYes->setChecked(false);
+    interactionYes->setStatusTip("Show interatcion");
+    connect(interactionYes, SIGNAL(triggered()), this, SLOT(showInteractionYes()));
+    changeInteractionMenu->addAction(interactionYes);
+
+    interactionNo = new QAction(tr("No"), this);
+    interactionNo->setCheckable(true);
+    interactionNo->setChecked(true);
+    interactionNo->setStatusTip("Don't show interatcion");
+    connect(interactionNo, SIGNAL(triggered()), this, SLOT(showInteractionNo()));
+    changeInteractionMenu->addAction(interactionNo);
 
     initAction = new QAction(tr("Initialize"), this);
     initAction->setShortcut(tr("Ctrl+d"));
@@ -714,6 +741,9 @@ void MainWindow::run()
     else {
         this->prune();
         if (algType == DFS) {
+            this->backtrack();
+        }
+        else if (algType == OPTIMIZEDDFS) {
             this->backtrack2();
         }
         else if (algType == LOCALSEARCH) {
@@ -796,17 +826,28 @@ void MainWindow::changeBoardSize()
 void MainWindow::changeAlgtoDFS()
 {
     algDFS->setChecked(true);
+    algOptimizedDFS->setChecked(false);
     algLocalSearch->setChecked(false);
     algType = DFS;
     cout << "DFS" << endl;
 }
 
+void MainWindow::changeAlgtoOptimizedDFS()
+{
+    algDFS->setChecked(false);
+    algOptimizedDFS->setChecked(true);
+    algLocalSearch->setChecked(false);
+    algType = OPTIMIZEDDFS;
+    cout << "Optimized DFS" << endl;
+}
+
 void MainWindow::changeAlgtoLocalSearch()
 {
     algDFS->setChecked(false);
+    algOptimizedDFS->setChecked(false);
     algLocalSearch->setChecked(true);
     algType = LOCALSEARCH;
-    cout << "Local Search" << endl;
+    cout << "Local Search (SA)" << endl;
 }
 
 void MainWindow::changeDisplayInterval()
@@ -820,4 +861,21 @@ void MainWindow::changeDisplayInterval()
     if(isOK) {
         DisplayInterval = newDisplayInterval;
     }
+}
+
+
+void MainWindow::showInteractionYes()
+{
+    interactionYes->setChecked(true);
+    interactionNo->setChecked(false);
+    doInteraction = true;
+    cout << "interaction yes" << endl;
+}
+
+void MainWindow::showInteractionNo()
+{
+    interactionYes->setChecked(false);
+    interactionNo->setChecked(true);
+    doInteraction = false;
+    cout << "interaction no" << endl;
 }

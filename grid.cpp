@@ -3,11 +3,15 @@
 #include <time.h>
 #include <QApplication>
 
+/*
+ * Global variables
+ * Initialized in the constructor of class MainWindow
+*/
 int boardSize;
 int gridSize;
-int DisplayInterval = 0;
-Alg algType = DFS;
-bool doInteraction = false;
+int DisplayInterval;
+Alg algType;
+bool doInteraction;
 
 int getGridSize(int bdSize)
 {
