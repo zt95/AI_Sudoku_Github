@@ -49,6 +49,9 @@ private:
     bool localSearch();
     bool judgeInput();
     void randomSolution();
+    void initRandom();
+    void initLock();
+    int localError();
 
 private:
     Ui::MainWindow *ui;
@@ -70,7 +73,12 @@ private:
     QAction *aboutAction;
 
     std::vector<std::vector<std::unordered_set<int> > > possibleNum;
-    std::vector<std::vector<Grid*> > board;
+    std::vector<std::vector<bool> > locked;
+    std::vector<std::vector<int> > boardVal;
+    std::vector<std::vector<std::unordered_set<int> > > col;   //col[1][5]={3,6} means boardVal[3][1] = boardVal[6][1] = 5
+    std::vector<std::vector<std::unordered_set<int> > > block; //block[1][5]={3,6} means boardVal[blockX(1)][blockY(3)] = boardVal[blockX(1)][block(6)] = 5
+
+    std::vector<std::vector<Grid*> > board; //Use for display/interaction
 
     bool isRunning;
 };

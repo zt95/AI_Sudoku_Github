@@ -451,47 +451,46 @@ bool MainWindow::backtrack()
     }
     return false;
 }
-/*
-std::vector<int> randomPerm(int n)
-{
-    std::vector<int> perm;
-    for(int i=0;i<n;i++)
-    {
-        perm.push_back(i);
-        int xchPos = rand()%(i+1);
-        int tmp = perm[i];
-        perm[i] = perm[xchPos];
-        perm[xchPos] = tmp;
-    }
-    return perm;
-}*/
 
-bool MainWindow::localSearch()
+void MainWindow::initLock()
+{
+    int n = boardSize * boardSize;
+    locked.clear();
+    for (int i = 0; i < n; ++i) {
+        std::vector<bool> lockedI(n);
+        for (int j = 0; j < n; ++j) {
+            int valAtIJ = board[i][j]->getter();
+            if (valAtIJ > 0)
+                lockedI[j] = true;
+            else
+                lockedI[j] = false;
+        }
+        locked.push_back(lockedI);
+    }
+}
+
+void MainWindow::initRandom()
 {
     int n = boardSize * boardSize;
     int m = boardSize;
-    std::vector<std::vector<bool> > locked;
-    std::vector<std::vector<int> > boardVal;
+    boardVal.clear();
+
     for (int i = 0; i < n; ++i) {
-        std::vector<bool> lockedI(n);
         std::vector<int> boardValI(n);
         std::vector<bool> numberUsed(n,false);
         int totalUsed = 0;
         for (int j = 0; j < n; ++j) {
             int valAtIJ = board[i][j]->getter();
-            if (valAtIJ > 0){
-                lockedI[j] = true;
+            if (valAtIJ && locked[i][j]> 0){
                 numberUsed[valAtIJ-1] = true;
                 boardValI[j] = valAtIJ-1;
                 totalUsed++;
             }
             else
             {
-                lockedI[j] = false;
                 boardValI[j] = -1;
             }
         }
-        locked.push_back(lockedI);
         for(int j = 0;j < n; ++j)
         {
             if(numberUsed[j]) continue;
@@ -518,14 +517,19 @@ bool MainWindow::localSearch()
             }
         }
     }
-    vector<vector<unordered_set<int> > > col;   //col[1][5]={3,6} means boardVal[3][1] = boardVal[6][1] = 5
-    vector<vector<unordered_set<int> > > block; //block[1][5]={3,6} means boardVal[blockX(1)][blockY(3)] = boardVal[blockX(1)][block(6)] = 5
-    //vector<vector<int> > ErrPoint;
+}
+
+int MainWindow::localError()
+{
+    int n = boardSize * boardSize;
+    int m = boardSize;
+
     int TotalErr = 0;
+    col.clear();
+    block.clear();
     for(int i=0;i<n;i++)
     {
         vector<unordered_set<int> > tmp;
-        //vector<int> tErr(n,0);
         for(int j=0;j<n;j++)
         {
             unordered_set<int> tmpUS= {};
@@ -533,7 +537,6 @@ bool MainWindow::localSearch()
         }
         col.push_back(tmp);
         block.push_back(tmp);
-        //ErrPoint.push_back(tErr);
     }
     for(int i=0;i<n;i++)
     {
@@ -552,45 +555,41 @@ bool MainWindow::localSearch()
         {
             TotalErr += col[i][j].size()*(col[i][j].size()-1);
             TotalErr += block[i][j].size()*(block[i][j].size()-1);
-            /*if(col[i][j].size()>1)
-            {
-                for(auto it = col[i][j].begin();it!=col[i][j].end();++it)
-                {
-                    ErrPoint[*it][i]++;
-                    if(!locked[*it][i])board[*it][i]->changeTextColor(Qt::blue);
-                }
-                TotalErr += col[i][j].size()-1;
-            }*/
-            /*if(block[i][j].size()>1)
-            {
-                for(auto it = block[i][j].begin();it!=block[i][j].end();++it)
-                {
-                    int bx = blockX(i,*it,m);
-                    int by = blockY(i,*it,m);
-                    ErrPoint[bx][by] ++;
-                    if(!locked[bx][by])board[bx][by]->changeTextColor(Qt::blue);
-                }
-                TotalErr += block[i][j].size()-1;
-            }*/
         }
     }
+    return TotalErr;
+}
+
+bool MainWindow::localSearch()
+{
+    int n = boardSize * boardSize;
+    int m = boardSize;
+
+    initLock();
+    initRandom();
+    int TotalErr = localError();
+
     int iter = 0;
     vector<double> tValue = {100.0,100.0,100.0,200.0,400.0,800.0,1600.0,3200.0,8000.0};
-    vector<double> aValue = {0.85,0.85,0.85,0.85,0.85,0.85,0.85,0.85,0.85};
+    vector<double> aValue = {0.78,0.8,0.83,0.85,0.88,0.88,0.9,0.93,0.95};
     vector<double> bValue = {1.1,1.1,1.1,1.1,1.1,1.1,1.1,1.1,1.1};
-    double T = tValue[m];
-    double alpha = aValue[m];
-    int M = 20;
-    double beta = bValue[m];
+    double T = tValue[m-1];
+    double alpha = aValue[m-1];
+    double beta = bValue[m-1];
+    cout<<"=====Local Search begin======"<<endl;
+    cout<<"T = "<<T<<endl;
+    cout<<"alpha = "<<alpha<<endl;
+    cout<<"beta = "<<beta<<endl;
+    int M = 10;
     int mIter = 0;
-    while(TotalErr>0 && iter<10000*m)
+    while(TotalErr>0)
     {
-        int i = rand()%board.size();
-        int j1 = rand()%board.size();
-        int j2 = rand()%board.size();
+        int i = rand()%n;
+        int j1 = rand()%n;
+        int j2 = rand()%n;
         if(j1==j2)continue;
         if(locked[i][j1] || locked[i][j2])continue;
-        //if(ErrPoint[i][j1]==0 && ErrPoint[i][j2]==0)continue;
+
         int val1 = boardVal[i][j1];
         int val2 = boardVal[i][j2];
         int bx1 = blockX(i,j1,m);
@@ -602,20 +601,13 @@ bool MainWindow::localSearch()
         iter++;
         mIter++;
         int tmpErr = 0;
-        /*if(col[j1][val1].size()>1)tmpErr--;
-        if(col[j1][val2].size()>0)tmpErr++;
-        if(col[j2][val2].size()>1)tmpErr--;
-        if(col[j2][val1].size()>0)tmpErr++;*/
+
         tmpErr-=2*(col[j1][val1].size()-1);
         tmpErr+=2*(col[j1][val2].size());
         tmpErr-=2*(col[j2][val2].size()-1);
         tmpErr+=2*(col[j2][val1].size());
         if(bx1!=bx2)
         {
-            /*if(block[bx1][val1].size()>1)tmpErr--;
-            if(block[bx1][val2].size()>0)tmpErr++;
-            if(block[bx2][val2].size()>1)tmpErr--;
-            if(block[bx2][val1].size()>0)tmpErr++;*/
             tmpErr-=2*(block[bx1][val1].size()-1);
             tmpErr+=2*(block[bx1][val2].size());
             tmpErr-=2*(block[bx2][val2].size()-1);
@@ -630,29 +622,12 @@ bool MainWindow::localSearch()
             boardVal[i][j2] = tmp;
 
             col[j1][val1].erase(i);
-            /*if(col[j1][val1].size() > 0)
-            {
-                ErrPoint[i][j1]--;
-                if(col[j1][val1].size() == 1)
-                {
-                    auto it = col[j1][val1].begin();
-                    ErrPoint[*it][j1] --;
-                    if(ErrPoint[*it][j1] == 0)board[*it][j1]->changeTextColor(Qt::red);
-                }
-            }*/
-
             col[j2][val2].erase(i);
-
             col[j1][val2].insert(i);
-
             col[j2][val1].insert(i);
-
             block[bx1][val1].erase(by1);
-
             block[bx2][val2].erase(by2);
-
             block[bx1][val2].insert(by1);
-
             block[bx2][val1].insert(by2);
 
             board[i][j1]->setter(boardVal[i][j1]+1);
@@ -661,132 +636,31 @@ bool MainWindow::localSearch()
         if(mIter == M)
         {
             mIter = 0;
-            M = M*beta;
             T *= alpha;
+            M *= beta;
         }
-        cout<<TotalErr<<" "<<iter<<" "<<T<<endl;
+        if(iter % (2000*m*m*m) == 0)
+        {
+            cout<<"--------------------------"<<endl;
+            cout<<"Iter:"<<iter<<endl;
+            cout<<"TotalErr"<<TotalErr<<endl;
+            cout<<"T="<<T<<endl;
+            cout<<"M="<<M<<endl;
+            cout<<"Random Restart Begin"<<endl;
+            M = 10;
+            T = tValue[m];
+            mIter = 0;
+            initRandom();
+            TotalErr  = localError();
+        }
     }
+    cout<<"--------------------------"<<endl;
     cout<<"Total iteration:"<<iter<<endl;
+    cout<<"TotalErr"<<TotalErr<<endl;
+    cout<<"=========End Local========="<<endl;
     return true;
 }
 
-/*
-int boardError(std::vector<std::vector<int> > B)
-{
-    int err = 0;
-    int n = B.size();
-    int m = sqrt(n);
-    for(int j=0;j<n;j++)
-    {
-        for(int i1=0;i1<n-1;i1++)
-        {
-            bool duplicate = false;
-            for(int i2=i1+1;i2<n;i2++)
-            {
-                if(B[i1][j] == B[i2][j])
-                {
-                    duplicate = true;
-                    break;
-                }
-            }
-            if(duplicate)err++;
-        }
-    }
-    for(int s=0;s<n;s++)
-    {
-        int sx = s/m;
-        int sy = s%m;
-        for(int r1=0;r1<n-1;r1++)
-        {
-            int x1 = sx*m+r1/m;
-            int y1 = sy*m+r1%m;
-            bool duplicate = false;
-            for(int r2=r1+1;r2<n;r2++)
-            {
-                int x2 = sx*m+r2/m;
-                int y2 = sy*m+r2%m;
-                if(B[x1][y1]==B[x2][y2])
-                {
-                    duplicate = true;
-                    break;
-                }
-            }
-            if(duplicate)err++;
-        }
-    }
-    return err;
-}
-
-bool MainWindow::localSearch()
-{
-    std::vector<std::vector<bool> > locked;
-    std::vector<std::vector<int> > boardVal;
-    for (int i = 0; i < board.size(); ++i) {
-        vector<bool> lockedI;
-        vector<int> permI = randomPerm(board.size());
-        for (int j = 0; j < board.size(); ++j) {
-            int valAtIJ = board[i][j]->getter();
-            if (valAtIJ > 0){
-                lockedI.push_back(true);
-                int t;
-                for(t=0;t<board.size();t++)
-                    if(permI[t] == valAtIJ-1)
-                        break;
-                int tmp = permI[j];
-                permI[j] = permI[t];
-                permI[t] = tmp;
-            }
-            else lockedI.push_back(false);
-        }
-        locked.push_back(lockedI);
-        boardVal.push_back(permI);
-    }
-    
-    
-    for (int i = 0; i < board.size(); ++i) {
-        for (int j = 0; j < board.size(); ++j) {
-            if (board[i][j]->getter() == 0) {
-                board[i][j]->setter(boardVal[i][j]+1);
-            }
-        }
-    }
-    int err = boardError(boardVal);
-    int iter = 0;
-    double T = 100.0;
-    double alpha = 0.99;
-    while(err>0 && iter<100000)
-    {
-        int i = rand()%board.size();
-        int j1 = rand()%board.size();
-        int j2 = rand()%board.size();
-        if(j1==j2)continue;
-        if(locked[i][j1] || locked[i][j2])continue;
-
-        iter++;
-        int tmp = boardVal[i][j1];
-        boardVal[i][j1] = boardVal[i][j2];
-        boardVal[i][j2] = tmp;
-
-        int newErr = boardError(boardVal);
-        if(newErr<err || exp((err-newErr)/T)*999>rand()%1000)
-        {
-            err = newErr;
-            board[i][j1]->setter(boardVal[i][j1]+1);
-            board[i][j2]->setter(boardVal[i][j2]+1);
-        }
-        else
-        {
-            tmp = boardVal[i][j1];
-            boardVal[i][j1] = boardVal[i][j2];
-            boardVal[i][j2] = tmp;
-        }
-        T *= alpha;
-        cout<<err<<endl;
-    }
-    if(err == 0)return true;
-    else return false;
-}
-*/
 bool MainWindow::judgeInput()
 {
     int n = board.size();
@@ -838,8 +712,8 @@ void MainWindow::run()
         }
     }
     else {
+        this->prune();
         if (algType == DFS) {
-            this->prune();
             this->backtrack2();
         }
         else if (algType == LOCALSEARCH) {

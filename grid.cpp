@@ -7,7 +7,7 @@ int boardSize;
 int gridSize;
 int DisplayInterval = 0;
 Alg algType = DFS;
-bool doInteraction = true;
+bool doInteraction = false;
 
 int getGridSize(int bdSize)
 {
