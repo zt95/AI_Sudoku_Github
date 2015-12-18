@@ -202,12 +202,11 @@ int blockY(int x,int y, int m)
 {
     return (x%m)*m+y%m;
 }
-void MainWindow::randomSolution()
+
+vector<int> randomPerm(int n)
 {
-    int m = boardSize;
-    int x=0;
     vector<int> perm;
-    for(int i=0;i<m*m;i++)
+    for(int i=0;i<n;i++)
     {
         int j = rand()%(i+1);
         perm.push_back(i);
@@ -215,15 +214,39 @@ void MainWindow::randomSolution()
         perm[j] = perm[i];
         perm[i] = tmp;
     }
+    return perm;
+}
+
+void MainWindow::randomSolution()
+{
+    int m = boardSize;
+    int x=0;
+    vector<int> permNum = randomPerm(m*m);
+    vector<int> permBlockRow = randomPerm(m);
+    vector<int> permBlockCol = randomPerm(m);
+    vector<vector<int> > permRow;
+    vector<vector<int> > permCol;
+
+    for(int i=0;i<m;i++)
+    {
+        vector<int> permRowI = randomPerm(m);
+        vector<int> permColI = randomPerm(m);
+        permRow.push_back(permRowI);
+        permCol.push_back(permColI);
+    }
+
     for(int i=0;i<m;i++)
     {
         for(int j=0;j<m;j++)
         {
-            for(int k=0;k<m*m;k++)
+            for(int k=0;k<m;k++)
             {
-                //cout<<"hi"<<endl;
-                board[m*i+j][k]->setter(perm[(x%(m*m))]+1);
-                x++;
+                for(int l=0;l<m;l++)
+                {
+                    //cout<<"hi"<<endl;
+                    board[m*permBlockRow[i]+permRow[i][j]][m*permBlockCol[k]+permCol[k][l]]->setter(permNum[(x%(m*m))]+1);
+                    x++;
+                }
             }
             x += m;
         }
@@ -295,6 +318,7 @@ void MainWindow::prune()
                 {
                     update = true;
                     auto it = possibleNum[i][j].begin();
+                    board[i][j]->changeTextColor(Qt::blue);
                     board[i][j]->setter(*it + 1);
                 }
             }
@@ -334,6 +358,7 @@ void MainWindow::prune()
                     if(board[i][rowOnly]->getter() == 0)
                     {
                         update = true;
+                        board[i][rowOnly]->changeTextColor(Qt::blue);
                         board[i][rowOnly]->setter(num+1);
                         possibleNum[i][rowOnly].clear();
                         possibleNum[i][rowOnly].insert(num);
@@ -344,6 +369,7 @@ void MainWindow::prune()
                     if(board[colOnly][i]->getter() == 0)
                     {
                         update = true;
+                        board[colOnly][i]->changeTextColor(Qt::blue);
                         board[colOnly][i]->setter(num+1);
                         possibleNum[colOnly][i].clear();
                         possibleNum[colOnly][i].insert(num);
@@ -356,6 +382,7 @@ void MainWindow::prune()
                     if(board[bx][by]->getter() == 0)
                     {
                         update = true;
+                        board[bx][by]->changeTextColor(Qt::blue);
                         board[bx][by]->setter(num+1);
                         possibleNum[bx][by].clear();
                         possibleNum[bx][by].insert(num);
@@ -600,6 +627,7 @@ bool MainWindow::localSearch()
     vector<double> tValue = {100.0,100.0,100.0,200.0,400.0,800.0,1600.0,3200.0,8000.0};
     vector<double> aValue = {0.78,0.8,0.83,0.85,0.88,0.88,0.9,0.93,0.95};
     vector<double> bValue = {1.1,1.1,1.1,1.1,1.1,1.1,1.1,1.1,1.1};
+    vector<int> maxIter = {100,500,3000,80000,200000,250000,250000,250000,250000};
     double T = tValue[m-1];
     double alpha = aValue[m-1];
     double beta = bValue[m-1];
@@ -666,7 +694,7 @@ bool MainWindow::localSearch()
             T *= alpha;
             M *= beta;
         }
-        if(iter % (2000*m*m*m) == 0)
+        if(iter % maxIter[m-1] == 0)
         {
             cout<<"--------------------------"<<endl;
             cout<<"Iter:"<<iter<<endl;
@@ -739,14 +767,15 @@ void MainWindow::run()
         }
     }
     else {
-        this->prune();
         if (algType == DFS) {
             this->backtrack();
         }
         else if (algType == OPTIMIZEDDFS) {
+            this->prune();
             this->backtrack2();
         }
         else if (algType == LOCALSEARCH) {
+            this->prune();
             this->localSearch();
         }
         QMessageBox::about(this, "Result", tr("Calculation complete!"));
